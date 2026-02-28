@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
 	"github.com/lucius-han/visual_cc/internal/event"
 )
 
@@ -73,7 +72,7 @@ func firstLine(s string, maxLen int) string {
 		s = s[:idx]
 	}
 	if len(s) > maxLen {
-		return s[:maxLen] + lipgloss.NewStyle().Foreground(colorDim).Render("…")
+		return s[:maxLen] + styleDim.Render("…")
 	}
 	return s
 }

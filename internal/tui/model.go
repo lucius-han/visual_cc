@@ -47,6 +47,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.store.Reset()
 			m.logBuf.Reset()
 			m.viewport.SetContent("")
+			m.autoScroll = true
 			return m, nil
 		case "G":
 			m.autoScroll = true
@@ -120,9 +121,3 @@ func renderHeader(width int) string {
 	return lipgloss.JoinHorizontal(lipgloss.Top, left, space, right)
 }
 
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}

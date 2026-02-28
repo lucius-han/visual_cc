@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/lipgloss"
 	"github.com/lucius-han/visual_cc/internal/store"
 )
 
@@ -95,5 +94,3 @@ func StatsPanelWidth() int {
 	return panelWidth + 2
 }
 
-// suppress unused import warning - lipgloss is used via styles.go in same package
-var _ = lipgloss.NewStyle()
