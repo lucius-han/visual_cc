@@ -2,6 +2,11 @@ package event
 
 import "time"
 
+const (
+	maxToolOutputBytes = 4096 // S13: cap ToolOutput stored in ring buffer
+	maxMessageBytes    = 512  // S13: cap Message stored in ring buffer
+)
+
 // FromHookPayload converts a Claude Code hook payload to an internal Event.
 // Claude Code sends PascalCase hook_event_name ("PreToolUse"), which is normalized
 // to our internal snake_case constants.
@@ -12,10 +17,18 @@ func FromHookPayload(p HookPayload, t time.Time) Event {
 		Timestamp:  t,
 		ToolName:   p.ToolName,
 		ToolInput:  p.ToolInput,
-		ToolOutput: p.ToolOutput,
+		ToolOutput: truncate(p.ToolOutput, maxToolOutputBytes),
 		ToolUseID:  p.ToolUseID,
-		Message:    p.Message,
+		Message:    truncate(p.Message, maxMessageBytes),
 	}
+}
+
+// truncate caps s to max bytes, appending an ellipsis if trimmed.
+func truncate(s string, max int) string {
+	if len(s) <= max {
+		return s
+	}
+	return s[:max] + "…[truncated]"
 }
 
 // normalizeType maps Claude Code's PascalCase hook_event_name to our internal constants.

@@ -19,6 +19,11 @@ type Stats struct {
 	NotifUnread    int
 }
 
+const (
+	maxPendingTools = 1000 // S6: cap to prevent unbounded memory growth
+	maxSubSessions  = 100  // S6: cap to prevent unbounded memory growth
+)
+
 // Store is a thread-safe ring buffer of events with aggregated statistics.
 type Store struct {
 	mu            sync.RWMutex
@@ -62,13 +67,17 @@ func (s *Store) Add(e event.Event) {
 	if s.mainSessionID == "" && e.SessionID != "" {
 		s.mainSessionID = e.SessionID
 	} else if e.SessionID != "" && e.SessionID != s.mainSessionID {
-		s.subSessions[e.SessionID] = true
+		// S6: cap subSessions map size
+		if len(s.subSessions) < maxSubSessions {
+			s.subSessions[e.SessionID] = true
+		}
 	}
 
 	// Permission tracking
 	switch e.Type {
 	case event.TypePreToolUse:
-		if e.ToolUseID != "" {
+		// S6: cap pendingTools map size
+		if e.ToolUseID != "" && len(s.pendingTools) < maxPendingTools {
 			s.pendingTools[e.ToolUseID] = true
 		}
 	case event.TypePostToolUse:

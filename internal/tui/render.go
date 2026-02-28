@@ -2,10 +2,27 @@ package tui
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/lucius-han/visual_cc/internal/event"
 )
+
+// ansiEscape matches ANSI/VT escape sequences (CSI, OSC, etc.)
+var ansiEscape = regexp.MustCompile(`\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\))`)
+
+// sanitize strips ANSI escape sequences and non-printable control characters
+// from user-supplied strings before they reach the terminal (S8).
+func sanitize(s string) string {
+	s = ansiEscape.ReplaceAllString(s, "")
+	var b strings.Builder
+	for _, r := range s {
+		if r >= 32 || r == '\t' {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
 
 // RenderEvent returns a styled string representation of an event for the log view.
 // isChild=true renders with indentation for subagent events.
@@ -60,8 +77,9 @@ func RenderEvent(e event.Event, isChild bool) string {
 		if msg == "" {
 			msg = e.ToolOutput
 		}
+		// S8: sanitize notification message
 		badge := styleBadgeUnread.Render("[미확인]")
-		sb.WriteString(fmt.Sprintf("  %s  %s %-32s %s\n", ts, icon, styleNotif.Render(msg), badge))
+		sb.WriteString(fmt.Sprintf("  %s  %s %-32s %s\n", ts, icon, styleNotif.Render(sanitize(msg)), badge))
 
 	default:
 		return ""
@@ -81,7 +99,8 @@ func renderAgentStart(e event.Event, ts string) string {
 	sb.WriteString(fmt.Sprintf("  %s  %s %s %s\n", ts, icon, name, subtype))
 	for _, key := range []string{"description", "prompt"} {
 		if v, ok := e.ToolInput[key]; ok {
-			desc := firstLine(fmt.Sprintf("%v", v), 55)
+			// S8: sanitize agent description before rendering
+			desc := firstLine(sanitize(fmt.Sprintf("%v", v)), 55)
 			sb.WriteString(styleIndent.Render("│ "+desc) + "\n")
 			break
 		}
@@ -132,7 +151,8 @@ func formatInput(e event.Event) string {
 	}
 	for _, key := range []string{"command", "file_path", "pattern", "old_string"} {
 		if v, ok := e.ToolInput[key]; ok {
-			return firstLine(fmt.Sprintf("%v", v), 60)
+			// S8: sanitize user-controlled content before rendering to terminal
+			return firstLine(sanitize(fmt.Sprintf("%v", v)), 60)
 		}
 	}
 	return ""

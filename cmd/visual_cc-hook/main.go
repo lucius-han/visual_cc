@@ -8,9 +8,8 @@ import (
 	"time"
 
 	"github.com/lucius-han/visual_cc/internal/event"
+	"github.com/lucius-han/visual_cc/internal/socket"
 )
-
-const socketPath = "/tmp/visual_cc.sock"
 
 func main() {
 	var payload event.HookPayload
@@ -25,14 +24,15 @@ func main() {
 		os.Exit(0)
 	}
 
-	conn, err := net.Dial("unix", socketPath)
+	// S5: use per-user socket path matching the server
+	conn, err := net.Dial("unix", socket.DefaultPath())
 	if err != nil {
 		// visual_cc not running - silently exit
 		os.Exit(0)
 	}
 	defer conn.Close()
 
-	conn.SetWriteDeadline(time.Now().Add(500 * time.Millisecond))
+	conn.SetWriteDeadline(time.Now().Add(500 * time.Millisecond)) //nolint:errcheck
 
 	// newline-delimited JSON
 	if _, err := fmt.Fprintf(conn, "%s\n", data); err != nil {

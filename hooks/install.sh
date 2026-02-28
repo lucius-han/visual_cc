@@ -11,6 +11,15 @@ if [ ! -f "$HOOK_BIN" ]; then
     exit 1
 fi
 
+# S12: warn if the path contains spaces (would produce invalid JSON)
+if [[ "$HOOK_BIN" == *" "* ]]; then
+    echo "Warning: the binary path contains spaces: $HOOK_BIN"
+    echo "Move the binary to a path without spaces before registering the hook."
+    echo "Example: sudo cp visual_cc-hook /usr/local/bin/visual_cc-hook"
+    echo "Then use '/usr/local/bin/visual_cc-hook' as the command below."
+    exit 1
+fi
+
 SETTINGS="$HOME/.claude/settings.json"
 
 echo "Add the following to the 'hooks' section of $SETTINGS"
@@ -26,6 +35,9 @@ cat <<EOF
       { "hooks": [{ "type": "command", "command": "$HOOK_BIN" }] }
     ],
     "Stop": [
+      { "hooks": [{ "type": "command", "command": "$HOOK_BIN" }] }
+    ],
+    "Notification": [
       { "hooks": [{ "type": "command", "command": "$HOOK_BIN" }] }
     ]
   }
