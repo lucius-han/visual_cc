@@ -45,13 +45,28 @@ func RenderStatsPanel(stats store.Stats, height int) string {
 		lines = append(lines, fmt.Sprintf("%-6s %s %d", item.k, bar, item.v))
 	}
 
-	for len(lines) < height-4 {
-		lines = append(lines, "")
+	// 알람 및 permission 섹션
+	lines = append(lines,
+		"",
+		styleDim.Render("알람 / Permission"),
+		styleDivider.Render(strings.Repeat("─", panelWidth-2)),
+		fmt.Sprintf("⚡ 알람   %s건", formatNumber(stats.NotifTotal)),
+		styleBadgeOK.Render(fmt.Sprintf("✓ 승인됨  %d건", stats.ConfirmedTools)),
+	)
+	if stats.DeniedTools > 0 {
+		lines = append(lines, stylePostErr.Render(fmt.Sprintf("✗ 거부됨  %d건", stats.DeniedTools)))
+	} else {
+		lines = append(lines, fmt.Sprintf("✗ 거부됨  %d건", stats.DeniedTools))
+	}
+	if stats.NotifUnread > 0 {
+		lines = append(lines, styleBadgeUnread.Render(fmt.Sprintf("🔴 미확인  %d건", stats.NotifUnread)))
+	} else {
+		lines = append(lines, styleDim.Render("   미확인  0건"))
 	}
 
 	lines = append(lines,
 		styleDivider.Render(strings.Repeat("─", panelWidth-2)),
-		styleHelp.Render("q quit  c clear"),
+		styleHelp.Render("q quit  c clear  n read"),
 	)
 
 	content := strings.Join(lines, "\n")
