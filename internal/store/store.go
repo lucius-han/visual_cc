@@ -1,0 +1,94 @@
+package store
+
+import (
+	"sync"
+	"time"
+
+	"github.com/lucius-han/visual_cc/internal/event"
+)
+
+// Stats holds aggregated statistics for a session.
+type Stats struct {
+	ToolCounts   map[string]int
+	TotalTokens  int
+	TotalCostUSD float64
+	StartTime    time.Time
+}
+
+// Store is a thread-safe ring buffer of events with aggregated statistics.
+type Store struct {
+	mu    sync.RWMutex
+	buf   []event.Event
+	cap   int
+	head  int
+	count int
+	stats Stats
+}
+
+// New creates a Store with the given ring buffer capacity.
+func New(capacity int) *Store {
+	return &Store{
+		buf:   make([]event.Event, capacity),
+		cap:   capacity,
+		stats: Stats{ToolCounts: make(map[string]int), StartTime: time.Now()},
+	}
+}
+
+// Add appends an event to the ring buffer and updates statistics.
+func (s *Store) Add(e event.Event) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.buf[s.head%s.cap] = e
+	s.head++
+	if s.count < s.cap {
+		s.count++
+	}
+
+	if e.ToolName != "" {
+		s.stats.ToolCounts[e.ToolName]++
+	}
+}
+
+// Events returns all events in the ring buffer in insertion order.
+func (s *Store) Events() []event.Event {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	result := make([]event.Event, s.count)
+	start := 0
+	if s.head > s.cap {
+		start = s.head % s.cap
+	}
+	for i := 0; i < s.count; i++ {
+		result[i] = s.buf[(start+i)%s.cap]
+	}
+	return result
+}
+
+// Stats returns a copy of current aggregated statistics.
+func (s *Store) Stats() Stats {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	counts := make(map[string]int, len(s.stats.ToolCounts))
+	for k, v := range s.stats.ToolCounts {
+		counts[k] = v
+	}
+	return Stats{
+		ToolCounts:   counts,
+		TotalTokens:  s.stats.TotalTokens,
+		TotalCostUSD: s.stats.TotalCostUSD,
+		StartTime:    s.stats.StartTime,
+	}
+}
+
+// Reset clears all events and statistics, resetting the start time.
+func (s *Store) Reset() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.buf = make([]event.Event, s.cap)
+	s.head = 0
+	s.count = 0
+	s.stats = Stats{ToolCounts: make(map[string]int), StartTime: time.Now()}
+}
