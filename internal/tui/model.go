@@ -79,7 +79,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case NewEventMsg:
 		e := event.Event(msg)
 		m.store.Add(e)
-		rendered := RenderEvent(e)
+		rendered := RenderEvent(e, false) // isChild wired in Task 5
 		if rendered != "" {
 			m.logBuf.WriteString(rendered)
 			m.viewport.SetContent(m.logBuf.String())
