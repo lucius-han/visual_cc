@@ -32,6 +32,10 @@ func main() {
 	}
 	defer conn.Close()
 
+	conn.SetWriteDeadline(time.Now().Add(500 * time.Millisecond))
+
 	// newline-delimited JSON
-	fmt.Fprintf(conn, "%s\n", data)
+	if _, err := fmt.Fprintf(conn, "%s\n", data); err != nil {
+		os.Exit(0)
+	}
 }

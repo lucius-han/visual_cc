@@ -35,3 +35,64 @@ func TestFromHookPayload_PreToolUse(t *testing.T) {
 		t.Errorf("expected event to be JSON serializable: %v", err)
 	}
 }
+
+func TestFromHookPayload_PostToolUse_WithOutput(t *testing.T) {
+	payload := event.HookPayload{
+		SessionID:  "sess2",
+		Type:       event.TypePostToolUse,
+		ToolName:   "Read",
+		ToolOutput: "file contents here",
+	}
+	now := time.Now()
+	e := event.FromHookPayload(payload, now)
+
+	if e.Type != event.TypePostToolUse {
+		t.Errorf("expected post_tool_use, got %s", e.Type)
+	}
+	if e.ToolOutput != "file contents here" {
+		t.Errorf("expected tool_output to be set, got %q", e.ToolOutput)
+	}
+	if e.ToolName != "Read" {
+		t.Errorf("expected tool_name Read, got %s", e.ToolName)
+	}
+}
+
+func TestFromHookPayload_Stop_MinimalPayload(t *testing.T) {
+	payload := event.HookPayload{
+		SessionID: "sess3",
+		Type:      event.TypeStop,
+	}
+	now := time.Now()
+	e := event.FromHookPayload(payload, now)
+
+	if e.Type != event.TypeStop {
+		t.Errorf("expected stop, got %s", e.Type)
+	}
+	if e.SessionID != "sess3" {
+		t.Errorf("expected session_id sess3, got %s", e.SessionID)
+	}
+	if e.ToolName != "" {
+		t.Errorf("expected empty tool_name, got %s", e.ToolName)
+	}
+	if e.ToolInput != nil {
+		t.Errorf("expected nil tool_input, got %v", e.ToolInput)
+	}
+}
+
+func TestFromHookPayload_ToolInput_Contents(t *testing.T) {
+	input := map[string]any{"command": "ls -la", "timeout": float64(30)}
+	payload := event.HookPayload{
+		SessionID: "sess4",
+		Type:      event.TypePreToolUse,
+		ToolName:  "Bash",
+		ToolInput: input,
+	}
+	e := event.FromHookPayload(payload, time.Now())
+
+	if e.ToolInput == nil {
+		t.Fatal("expected tool_input to be set")
+	}
+	if e.ToolInput["command"] != "ls -la" {
+		t.Errorf("expected command 'ls -la', got %v", e.ToolInput["command"])
+	}
+}
