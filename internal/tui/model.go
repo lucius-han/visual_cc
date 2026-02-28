@@ -78,6 +78,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case NewEventMsg:
 		e := event.Event(msg)
+		m.store.Add(e)
 		rendered := RenderEvent(e)
 		if rendered != "" {
 			m.logBuf.WriteString(rendered)
