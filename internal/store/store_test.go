@@ -73,3 +73,96 @@ func TestStore_Stats_ReturnsCopy(t *testing.T) {
 		t.Errorf("expected Stats() to return a copy, but internal state was mutated")
 	}
 }
+
+func TestStore_Permission_ConfirmedOnPostToolUse(t *testing.T) {
+	s := store.New(100)
+
+	s.Add(event.Event{
+		SessionID: "sess1", Type: event.TypePreToolUse,
+		ToolName: "Bash", ToolUseID: "tu1", Timestamp: time.Now(),
+	})
+
+	stats := s.Stats()
+	if stats.ConfirmedTools != 0 {
+		t.Errorf("expected 0 confirmed before PostToolUse, got %d", stats.ConfirmedTools)
+	}
+
+	s.Add(event.Event{
+		SessionID: "sess1", Type: event.TypePostToolUse,
+		ToolName: "Bash", ToolUseID: "tu1", Timestamp: time.Now(),
+	})
+
+	stats = s.Stats()
+	if stats.ConfirmedTools != 1 {
+		t.Errorf("expected 1 confirmed, got %d", stats.ConfirmedTools)
+	}
+}
+
+func TestStore_Permission_DeniedOnStop(t *testing.T) {
+	s := store.New(100)
+
+	s.Add(event.Event{
+		SessionID: "sess1", Type: event.TypePreToolUse,
+		ToolName: "Bash", ToolUseID: "tu2", Timestamp: time.Now(),
+	})
+	s.Add(event.Event{
+		SessionID: "sess1", Type: event.TypeStop, Timestamp: time.Now(),
+	})
+
+	stats := s.Stats()
+	if stats.DeniedTools != 1 {
+		t.Errorf("expected 1 denied, got %d", stats.DeniedTools)
+	}
+	if stats.ConfirmedTools != 0 {
+		t.Errorf("expected 0 confirmed, got %d", stats.ConfirmedTools)
+	}
+}
+
+func TestStore_Notification_Stats(t *testing.T) {
+	s := store.New(100)
+
+	s.Add(event.Event{
+		SessionID: "sess1", Type: event.TypeNotification,
+		Message: "알람1", Timestamp: time.Now(),
+	})
+	s.Add(event.Event{
+		SessionID: "sess1", Type: event.TypeNotification,
+		Message: "알람2", Timestamp: time.Now(),
+	})
+
+	stats := s.Stats()
+	if stats.NotifTotal != 2 {
+		t.Errorf("expected NotifTotal 2, got %d", stats.NotifTotal)
+	}
+	if stats.NotifUnread != 2 {
+		t.Errorf("expected NotifUnread 2, got %d", stats.NotifUnread)
+	}
+
+	s.MarkNotifsRead()
+
+	stats = s.Stats()
+	if stats.NotifUnread != 0 {
+		t.Errorf("expected NotifUnread 0 after MarkNotifsRead, got %d", stats.NotifUnread)
+	}
+}
+
+func TestStore_MainSessionID(t *testing.T) {
+	s := store.New(100)
+
+	if s.MainSessionID() != "" {
+		t.Error("expected empty MainSessionID before any event")
+	}
+
+	s.Add(event.Event{SessionID: "main-sess", Type: event.TypePreToolUse, Timestamp: time.Now()})
+	s.Add(event.Event{SessionID: "sub-sess", Type: event.TypePreToolUse, Timestamp: time.Now()})
+
+	if s.MainSessionID() != "main-sess" {
+		t.Errorf("expected main-sess, got %q", s.MainSessionID())
+	}
+	if !s.IsSubagentSession("sub-sess") {
+		t.Error("expected sub-sess to be a subagent session")
+	}
+	if s.IsSubagentSession("main-sess") {
+		t.Error("expected main-sess NOT to be a subagent session")
+	}
+}
