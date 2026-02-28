@@ -3,14 +3,32 @@ package event
 import "time"
 
 // FromHookPayload converts a Claude Code hook payload to an internal Event.
+// Claude Code sends PascalCase hook_event_name ("PreToolUse"), which is normalized
+// to our internal snake_case constants.
 func FromHookPayload(p HookPayload, t time.Time) Event {
 	return Event{
 		SessionID:  p.SessionID,
-		Type:       p.Type,
+		Type:       normalizeType(p.Type),
 		Timestamp:  t,
 		ToolName:   p.ToolName,
 		ToolInput:  p.ToolInput,
 		ToolOutput: p.ToolOutput,
+	}
+}
+
+// normalizeType maps Claude Code's PascalCase hook_event_name to our internal constants.
+func normalizeType(t Type) Type {
+	switch t {
+	case "PreToolUse":
+		return TypePreToolUse
+	case "PostToolUse":
+		return TypePostToolUse
+	case "Stop":
+		return TypeStop
+	case "Notification":
+		return TypeNotification
+	default:
+		return t
 	}
 }
 
