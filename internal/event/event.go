@@ -2,6 +2,18 @@ package event
 
 import "time"
 
+// FromHookPayload converts a Claude Code hook payload to an internal Event.
+func FromHookPayload(p HookPayload, t time.Time) Event {
+	return Event{
+		SessionID:  p.SessionID,
+		Type:       p.Type,
+		Timestamp:  t,
+		ToolName:   p.ToolName,
+		ToolInput:  p.ToolInput,
+		ToolOutput: p.ToolOutput,
+	}
+}
+
 type Type string
 
 const (
