@@ -96,3 +96,29 @@ func TestFromHookPayload_ToolInput_Contents(t *testing.T) {
 		t.Errorf("expected command 'ls -la', got %v", e.ToolInput["command"])
 	}
 }
+
+func TestFromHookPayload_ToolUseID(t *testing.T) {
+	payload := event.HookPayload{
+		SessionID: "sess1",
+		Type:      event.TypePreToolUse,
+		ToolName:  "Bash",
+		ToolUseID: "toolu_abc123",
+		ToolInput: map[string]any{"command": "ls"},
+	}
+	e := event.FromHookPayload(payload, time.Now())
+	if e.ToolUseID != "toolu_abc123" {
+		t.Errorf("expected ToolUseID toolu_abc123, got %q", e.ToolUseID)
+	}
+}
+
+func TestFromHookPayload_NotificationMessage(t *testing.T) {
+	payload := event.HookPayload{
+		SessionID: "sess1",
+		Type:      event.TypeNotification,
+		Message:   "작업이 완료되었습니다",
+	}
+	e := event.FromHookPayload(payload, time.Now())
+	if e.Message != "작업이 완료되었습니다" {
+		t.Errorf("expected Message set, got %q", e.Message)
+	}
+}

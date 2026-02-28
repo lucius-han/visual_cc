@@ -13,6 +13,8 @@ func FromHookPayload(p HookPayload, t time.Time) Event {
 		ToolName:   p.ToolName,
 		ToolInput:  p.ToolInput,
 		ToolOutput: p.ToolOutput,
+		ToolUseID:  p.ToolUseID,
+		Message:    p.Message,
 	}
 }
 
@@ -48,6 +50,8 @@ type HookPayload struct {
 	ToolName   string         `json:"tool_name,omitempty"`
 	ToolInput  map[string]any `json:"tool_input,omitempty"`
 	ToolOutput string         `json:"tool_response,omitempty"`
+	ToolUseID  string         `json:"tool_use_id,omitempty"`
+	Message    string         `json:"message,omitempty"`
 }
 
 // Event is visual_cc's internal event representation
@@ -60,4 +64,6 @@ type Event struct {
 	ToolOutput string         `json:"tool_output,omitempty"`
 	DurationMs int64          `json:"duration_ms,omitempty"`
 	IsError    bool           `json:"is_error,omitempty"`
+	ToolUseID  string         `json:"tool_use_id,omitempty"`
+	Message    string         `json:"message,omitempty"`
 }
