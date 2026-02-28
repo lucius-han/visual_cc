@@ -49,6 +49,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.viewport.SetContent("")
 			m.autoScroll = true
 			return m, nil
+		case "n":
+			m.store.MarkNotifsRead()
+			return m, nil
 		case "G":
 			m.autoScroll = true
 			m.viewport.GotoBottom()
@@ -79,7 +82,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case NewEventMsg:
 		e := event.Event(msg)
 		m.store.Add(e)
-		rendered := RenderEvent(e, false) // isChild wired in Task 5
+		mainID := m.store.MainSessionID()
+		isChild := mainID != "" && e.SessionID != "" && e.SessionID != mainID
+		rendered := RenderEvent(e, isChild)
 		if rendered != "" {
 			m.logBuf.WriteString(rendered)
 			m.viewport.SetContent(m.logBuf.String())
@@ -117,7 +122,7 @@ func (m Model) View() string {
 
 func renderHeader(width int) string {
 	left := styleHeader.Render(" visual_cc")
-	right := styleDim.Render("q quit  ↑↓ scroll  G bottom  c clear ")
+	right := styleDim.Render("q quit  ↑↓ scroll  G bottom  c clear  n read ")
 	space := strings.Repeat(" ", max(0, width-lipgloss.Width(left)-lipgloss.Width(right)))
 	return lipgloss.JoinHorizontal(lipgloss.Top, left, space, right)
 }
